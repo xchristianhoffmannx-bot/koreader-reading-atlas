@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+.env
+# everything personal lives in the data home, never in the repository
+atlas-history/
+atlas-images/
+atlas-maps/
+atlas-geo/
+atlas-books.json
+book-cache/
+progress.json
+config.json
+work/
+atlas/
+*.epub
+private-terms*.txt

@@ -1,0 +1,21 @@
+KOReader Reading Atlas
+Copyright (C) 2026 KOReader Reading Atlas contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See COPYING.
+
+Parts of reading_atlas/llm.py (API provider requests and the reading of keys saved by
+koreader-reading-recap) are adapted from koreader-reading-recap, which uses the same licence.
+
+Data and services used at run time, none of them bundled in this repository:
+- Natural Earth land polygons (public domain), downloaded once on first use for the location map.
+- OpenStreetMap data through the Nominatim geocoder (c) OpenStreetMap contributors, ODbL. Follow the Nominatim
+  usage policy: identify yourself in "nominatim_contact", at most one request per second (results are cached).
+- Wikimedia Commons maps, only if you place or search them; every file keeps its own licence, which the page shows.
+- Your AI provider (OpenAI, Anthropic, Google Gemini) or the Codex CLI, under your own account and their terms.

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "koreader-reading-atlas"
+version = "0.1.0"
+description = "A spoiler-free atlas of the books you read: characters, relationships, places and a timeline that grow with your reading position."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "AGPL-3.0-or-later" }
+dependencies = []
+
+[project.optional-dependencies]
+portraits = ["Pillow>=10"]
+
+[project.scripts]
+reading-atlas = "reading_atlas.cli:main"
+
+[tool.setuptools]
+packages = ["reading_atlas"]
+
+[tool.setuptools.package-data]
+reading_atlas = ["templates/*.html"]
