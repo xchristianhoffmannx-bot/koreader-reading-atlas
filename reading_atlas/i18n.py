@@ -67,6 +67,8 @@ TABLE = [
     ('Present-day coastlines, not a historical map. The numbers match the locations.', 'Heutige Küstenlinien, keine historische Karte. Die Nummern entsprechen den Schauplätzen.', False),
     ('Basis: your recap, as of ${D.asof}. Built only from the text you have read, no later events added.', 'Grundlage: dein Rückblick, Stand ${D.asof}. Nur aus dem gelesenen Text erstellt, keine späteren Ereignisse ergänzt.', False),
     ('Own guess. Never becomes a book fact and is stored only on this device.', 'Eigene Vermutung. Wird nie zu einem Buchfakt und nur auf diesem Gerät gespeichert.', False),
+    ('Status according to the text: ', 'Stand laut Text: ', False),
+    ('Clothing: interpretation based on status', 'Kleidung: Deutung nach Stand', False),
     ('Load', 'Laden', False), ('List', 'Liste', False), ('Note', 'Notiz', False), ('Later', 'Später', False),
     ('Search', 'Suchen', False), ('Back', 'Zurück', False), ('Groups', 'Gruppen', False), ('Delete', 'Löschen', False),
     ('Copy', 'Kopieren', False), ('Search …', 'Suchen …', False), ('Cancel', 'Abbrechen', False), ('Close', 'Schließen', False),

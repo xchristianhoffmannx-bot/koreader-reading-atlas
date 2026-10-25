@@ -121,6 +121,9 @@ def cmd_portraits(args):
             print('Portraits are off. Set "portraits": true in config.json to allow image generation (it costs money).')
             return 1
         print('created:', portraits.generate(args.book_id, chain, llm.LazyClient(settings), limit=args.max))
+    elif args.action == 'preview':
+        for name, text, attached in portraits.preview(args.book_id, chain, args.target.split(',') if args.target else None):
+            print(f'== {name} (attached: {", ".join(attached) or "nothing"})\n{text}\n')
     elif args.action == 'sheet':
         print(portraits.sheet(args.book_id))
     elif args.action == 'approve':
@@ -156,9 +159,9 @@ def main(argv=None):
         p.add_argument('book_id')
         p.set_defaults(run=func)
     p = sub.add_parser('portraits', help='plan, generate and approve portraits')
-    p.add_argument('action', choices=['plan', 'generate', 'sheet', 'approve', 'reject', 'rekey'])
+    p.add_argument('action', choices=['plan', 'preview', 'generate', 'sheet', 'approve', 'reject', 'rekey'])
     p.add_argument('book_id')
-    p.add_argument('target', nargs='?', help='figure ids for approve/reject')
+    p.add_argument('target', nargs='?', help='figure ids for preview/approve/reject')
     p.add_argument('--max', type=int, help='at most this many new images')
     p.set_defaults(run=cmd_portraits)
     args = parser.parse_args(argv)

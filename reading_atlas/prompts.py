@@ -101,24 +101,37 @@ PORTRAIT = {
     'de': {
         'start': 'Erzeuge mit dem Bildgenerierungswerkzeug GENAU EIN Porträtbild einer erfundenen Romanfigur. Das sind die einzigen Angaben zu ihrem Aussehen: ',
         'age': 'Alter laut Text: ',
-        'no_extras': 'Erfinde keine auffälligen Besonderheiten wie Narben, Rüstung, Waffen oder Schmuck, die nicht genannt sind. Schlichte, zeitlose Kleidung. ',
+        'plain': 'Schlichte, zeitlose Kleidung. ',
+        'role': 'Stand beziehungsweise Rolle laut Text: ',
+        'setting': 'Zeit laut Text: ',
+        'dress': ('Kleidung und Abzeichen passen zu diesem Stand und zu dieser Zeit: zum Beispiel trägt ein König eine Krone oder einen '
+                  'Stirnreif und einen schweren Mantel mit Pelzbesatz, ein Adliger gutes Tuch mit Mantelspange, ein Geistlicher eine '
+                  'schlichte dunkle Kutte mit kleinem Kreuz, ein Bauer grobes Leinen, ein Kind einen einfachen Kittel. Ist der Stand '
+                  'nicht eindeutig, bleibt die Kleidung schlicht. '),
+        'no_extras': 'Erfinde keine persönlichen Besonderheiten wie Narben, Waffen oder Schmuck, die weder genannt sind noch zum genannten Stand gehören. ',
         'style': ('Stil: ruhige Tuschezeichnung mit gedämpften Bronze- und Steintönen auf dunklem Grund, Brustbild, Blick leicht '
                   'seitlich, quadratisches Format, keine Schrift, kein Rahmen.'),
         'style_ref': 'Das erste angehängte Bild gibt den Zeichenstil vor, übernimm nur diesen Stil, nicht die Person. ',
         'previous': ('Das letzte angehängte Bild zeigt dieselbe Figur in einer früheren Fassung: Es ist dieselbe Person, '
-                     'behalte Gesicht, Haarfarbe und Alter bei und ergänze nur die neuen Merkmale. '),
+                     'behalte Gesicht, Haarfarbe und Alter bei und ergänze nur Neues (Merkmale, Kleidung nach Stand). '),
         'hint': 'Wichtig, Korrektur durch den Leser: ',
         'end': 'Antworte danach nur mit dem vollständigen Dateipfad des erzeugten Bildes.',
     },
     'en': {
         'start': 'Use the image generation tool to create EXACTLY ONE portrait of an invented fictional character. These are the only details about the appearance: ',
         'age': 'Age according to the text: ',
-        'no_extras': 'Do not invent striking features such as scars, armour, weapons or jewellery that are not mentioned. Plain, timeless clothing. ',
+        'plain': 'Plain, timeless clothing. ',
+        'role': 'Status or role according to the text: ',
+        'setting': 'Time according to the text: ',
+        'dress': ('Clothing and insignia suit this status and this period: for example a king wears a crown or circlet and a heavy '
+                  'fur-trimmed cloak, a nobleman good cloth with a cloak brooch, a priest a plain dark robe with a small cross, a '
+                  'peasant coarse linen, a child a simple tunic. If the status is not clear, keep the clothing plain. '),
+        'no_extras': 'Do not invent personal features such as scars, weapons or jewellery that are neither mentioned nor part of the stated status. ',
         'style': ('Style: calm ink drawing in muted bronze and stone tones on a dark ground, bust portrait, gaze turned slightly '
                   'sideways, square format, no lettering, no frame.'),
         'style_ref': 'The first attached image sets the drawing style; take over only that style, not the person. ',
         'previous': ('The last attached image shows the same character in an earlier version: it is the same person, keep '
-                     'face, hair colour and age and add only the new features. '),
+                     'face, hair colour and age and add only what is new (features, clothing for the status). '),
         'hint': 'Important, correction by the reader: ',
         'end': 'Then answer only with the full file path of the generated image.',
     },

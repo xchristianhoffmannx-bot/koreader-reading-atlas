@@ -468,7 +468,7 @@ dialog.sheet .body ul{padding-left:18px;margin:0}
  function drawPortrait(id){
   const box=$('#c-img');box.replaceChildren();const v=id&&imgFor(id,active);box.hidden=!v;if(!v)return;
   box.append(h('img',{src:v.src,alt:'AI interpretation: '+v.looks.join(' ')}),
-   h('details',{},h('summary',{text:'AI interpretation of the description'}),h('p',{text:'Drawn only from what your text says about the appearance:'}),h('ul',{class:'hist'},v.looks.map(x=>h('li',{text:x}))),v.age?h('p',{text:'Age according to the text: '+v.age}):null,v.hint?h('p',{text:'Correction from you: '+v.hint}):null));
+   h('details',{},h('summary',{text:'AI interpretation of the description'}),h('p',{text:'Drawn only from what your text says about the appearance:'}),h('ul',{class:'hist'},v.looks.map(x=>h('li',{text:x}))),v.age?h('p',{text:'Age according to the text: '+v.age}):null,v.role?h('p',{text:'Status according to the text: '+v.role}):null,v.role?h('p',{text:'Clothing: interpretation based on status'}):null,v.hint?h('p',{text:'Correction from you: '+v.hint}):null));
  }
  const SIZE={},LABEL={};S.forEach(s=>{SIZE[s.chapter]=s.size;LABEL[s.chapter]=s.label;});
  const ref=at=>{const sz=SIZE[at[0]],pct=sz?Math.min(100,Math.round((at[1]+1)/sz*100)):null;return `Chapter “${LABEL[at[0]]||at[0]}”${pct!=null?`, about ${pct} % into the chapter`:''}`;};

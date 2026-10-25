@@ -86,7 +86,7 @@ Other commands: `position` (set a reading position by hand), `audit` and `enrich
 
 ## Portraits
 
-Turn them on with `"portraits": true`. A character gets a portrait once the text states at least three appearance features (and only for the most connected characters). A new version is drawn only when that set of facts changes; older versions stay for earlier states. New images are **not shown until you approve them** (`portraits sheet` writes a contact sheet, `portraits approve <ids>` releases them). You can add a correction hint per character in `atlas-images/<book id>/index.json` under `hints`; it is shown in the page next to the image.
+Turn them on with `"portraits": true`. A character gets a portrait once the text states at least three appearance features (and only for the most connected characters). The stated rank or status (for example "king", "priest", "child") counts as one feature and shapes the clothing: a king is drawn with a crown or circlet, a priest in a plain robe, and an unclear status stays plain. The prompt also names the time stated in the text (month and year only). Personal marks such as scars, weapons or jewellery are never invented. A new version is drawn only when that set of facts changes (a new status is a change); older versions stay for earlier states. New images are **not shown until you approve them** (`portraits sheet` writes a contact sheet, `portraits approve <ids>` releases them). You can add a correction hint per character in `atlas-images/<book id>/index.json` under `hints`; it is shown in the page next to the image.
 
 ## Limitations
 

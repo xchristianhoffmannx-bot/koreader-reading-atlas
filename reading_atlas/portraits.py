@@ -60,8 +60,18 @@ def description(chain, upto, figure):
     return looks, age
 
 
-def digest(looks, age):
-    return hashlib.sha1(json.dumps([sorted(looks), age], ensure_ascii=False).encode('utf-8')).hexdigest()[:12]
+def role_of(chain, upto, figure):
+    """The figure's role or status (after corrections in the text) and the setting, as known up to chain[upto]."""
+    node = S.fold(chain[:upto + 1])['nodes'].get(figure) or {}
+    where = (chain[upto]['state'].get('where') or '').strip()
+    when = re.search(r'([A-Za-zÄÖÜäöüéèê]+\s+\d{3,4}|\b\d{3,4}\b)', where)   # the year (with month) is what matters for clothing
+    return (node.get('kind') or '').strip(), when.group(1) if when else ''
+
+
+def digest(looks, age, role=''):
+    """Fingerprint of a version: appearance, age and status. A new status (for example a coronation) is a new version."""
+    payload = [sorted(looks), age] + ([role] if role else [])
+    return hashlib.sha1(json.dumps(payload, ensure_ascii=False).encode('utf-8')).hexdigest()[:12]
 
 
 def load_index(book_id):
@@ -82,14 +92,17 @@ def plan(book_id, chain):
         known = [v['hash'] for v in index['figures'].get(figure, [])]
         for i, state in enumerate(chain):
             looks, age = description(chain, i, figure)
-            if sum(len(features(t)) for t in looks) < MIN_FEATURES and not (looks and figure in index.get('hints', {})):
+            role, setting = role_of(chain, i, figure)
+            count = sum(len(features(t)) for t in looks) + (1 if role else 0)   # a stated status counts as one feature
+            if count < MIN_FEATURES and not (looks and figure in index.get('hints', {})):
                 continue   # a reader's correction hint shows that an image is wanted even with fewer features
-            h = digest(looks, age)
+            h = digest(looks, age, role)
             if h in known:
                 continue
             known.append(h)
             jobs.append({'figure': figure, 'name': world['nodes'][figure]['name'], 'hash': h, 'from_chapter': state['chapter'],
-                         'looks': looks, 'age': age, 'previous': (known[-2] if len(known) > 1 else None)})
+                         'looks': looks, 'age': age, 'role': role, 'setting': setting,
+                         'previous': (known[-2] if len(known) > 1 else None)})
     return jobs
 
 
@@ -98,6 +111,13 @@ def prompt_for(job, has_style, has_previous):
     text = p['start'] + ' '.join(job['looks']) + ' '
     if job['age']:
         text += p['age'] + job['age'] + '. '
+    if job.get('role'):
+        text += p['role'] + job['role'] + '. '
+        if job.get('setting'):
+            text += p['setting'] + job['setting'] + '. '
+        text += p['dress']
+    else:
+        text += p['plain']
     text += p['no_extras'] + p['style'] + ' '
     if has_style:
         text += p['style_ref']
@@ -136,7 +156,7 @@ def generate(book_id, chain, client, runner=None, limit=None):
         source = runner(prompt_for(job, style.exists(), bool(prev_file and prev_file.exists())), attachments, client, work)
         key = store_image(source, book_id, job)
         index['figures'].setdefault(job['figure'], []).append(
-            {'hash': job['hash'], 'key': key, 'from_chapter': job['from_chapter'], 'looks': job['looks'], 'age': job['age'],
+            {'hash': job['hash'], 'key': key, 'from_chapter': job['from_chapter'], 'looks': job['looks'], 'age': job['age'], 'role': job.get('role', ''), 'setting': job.get('setting', ''),
              'name': job['name'], 'hint': job.get('hint', ''), 'approved': False, 'created': time.strftime('%Y-%m-%dT%H:%M:%S')})
         save_index(book_id, index)
         made.append(key)
@@ -183,7 +203,8 @@ def rekey(book_id, chain):
                 continue
             at = next((i for i, s in enumerate(chain) if s['chapter'] >= v['from_chapter']), len(chain) - 1)
             looks, age = description(chain, at, figure)
-            clean = digest(looks, age)
+            role, _setting = role_of(chain, at, figure)
+            clean = digest(looks, age, role)
             twin = next((o for o in versions if o is not v and o['approved'] and o['hash'] == clean), None)
             folder = IMAGES / book_id / figure
             if twin:
@@ -198,7 +219,7 @@ def rekey(book_id, chain):
                 old = folder / (v['hash'] + suffix)
                 if old.exists() and clean != v['hash']:
                     old.rename(folder / (clean + suffix))
-            v['hash'], v['key'], v['looks'], v['age'] = clean, f'{figure}/{clean}', looks, age
+            v['hash'], v['key'], v['looks'], v['age'], v['role'] = clean, f'{figure}/{clean}', looks, age, role
             changed.append((v['name'], 're-filed'))
     save_index(book_id, index)
     return changed
@@ -235,12 +256,30 @@ def embed_data(book_id):
     import base64
     out = {}
     for figure, versions in load_index(book_id)['figures'].items():
-        rows = []
-        for v in sorted(versions, key=lambda v: v['from_chapter']):
+        rows, latest = [], {}
+        for v in versions:   # one picture per figure and chapter: the newest approved version wins
+            if v['approved']:
+                latest[v['from_chapter']] = v
+        for v in (latest[c] for c in sorted(latest)):
             small = IMAGES / book_id / (v['key'] + '-384.webp')
-            if v['approved'] and small.exists():
-                rows.append({'from': v['from_chapter'], 'looks': v['looks'], 'age': v['age'], 'hint': v.get('hint', ''),
+            if small.exists():
+                rows.append({'from': v['from_chapter'], 'looks': v['looks'], 'age': v['age'], 'role': v.get('role', ''), 'hint': v.get('hint', ''),
                              'src': 'data:image/webp;base64,' + base64.b64encode(small.read_bytes()).decode()})
         if rows:
             out[figure] = rows
+    return out
+
+
+def preview(book_id, chain, figures=None):
+    """[(name, prompt text, attachments)] for the planned images; nothing is generated or sent."""
+    index = load_index(book_id)
+    style = IMAGES / book_id / 'style.png'
+    out = []
+    for job in plan(book_id, chain):
+        if figures and job['figure'] not in figures:
+            continue
+        job['hint'] = index.get('hints', {}).get(job['figure'], '')
+        has_previous = any(v['hash'] == job['previous'] for v in index['figures'].get(job['figure'], []))
+        out.append((job['name'], prompt_for(job, style.exists(), has_previous),
+                    (['style reference'] if style.exists() else []) + (['earlier version'] if has_previous else [])))
     return out

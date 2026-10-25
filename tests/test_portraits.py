@@ -72,5 +72,60 @@ class PortraitTest(unittest.TestCase):
         self.assertTrue(data['anna'][0]['src'].startswith('data:image/webp;base64,'))
         self.assertEqual(len(P.generate('b' * 32, chain(), 'x', runner=self.runner, limit=1)), 1)   # next one only
 
+
+def rank_chain(role='King', later_role=None):
+    def n(kind):
+        return {'t': 'node', 'id': 'k', 'name': 'Kay', 'short': '', 'aliases': [], 'group': 'g', 'kind': kind, 'text': '', 'at': [1, 0]}
+    s1 = {'chapter': 1, 'paragraph': 9, 'complete': True, 'label': 'One', 'groups': [{'id': 'g', 'label': 'G'}],
+          'state': {'where': 'Oakfield · October 1013'},
+          'facts': [n(role), {'t': 'node', 'id': 'q', 'name': 'Quin', 'short': '', 'aliases': [], 'group': 'g', 'kind': '', 'text': '', 'at': [1, 0]},
+                    {'t': 'edge', 'id': 'e', 'a': 'k', 'b': 'q', 'label': 'x', 'detail': '', 'at': [1, 0]},
+                    prof('k', 'aussehen', 'Kay is tall and grey-haired.'), prof('q', 'aussehen', 'Quin is tall and grey-haired.')]}
+    states = [s1]
+    if later_role:
+        states.append({'chapter': 2, 'paragraph': 4, 'complete': False, 'label': 'Two', 'groups': [], 'state': {'where': 'Harbourtown'},
+                       'facts': [{'t': 'rev', 'target': 'k', 'field': 'kind', 'text': later_role, 'reason': '', 'at': [2, 1]}]})
+    return states
+
+
+class RankTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp)
+        P.IMAGES = self.tmp / 'images'
+        P.HERE = self.tmp
+        P.LANG = 'en'
+
+    def test_a_stated_status_counts_as_a_feature(self):
+        names = [j['name'] for j in P.plan('b' * 32, rank_chain())]
+        self.assertEqual(names, ['Kay'])        # two features + the role reach three; Quin has the same looks but no role
+
+    def test_a_new_status_is_a_new_version_from_that_chapter(self):
+        jobs = [(j['name'], j['from_chapter'], j['role']) for j in P.plan('b' * 32, rank_chain('Prince', 'King'))]
+        self.assertEqual(jobs, [('Kay', 1, 'Prince'), ('Kay', 2, 'King')])
+
+    def test_prompt_carries_status_setting_and_clothing_rule_only_when_a_status_is_known(self):
+        job = P.plan('b' * 32, rank_chain())[0]
+        text = P.prompt_for(job, True, False)
+        self.assertIn('Status or role according to the text: King', text)
+        self.assertIn('Time according to the text: October 1013', text)
+        self.assertIn('crown', text)
+        self.assertIn('neither mentioned nor part of the stated status', text)       # personal marks stay forbidden
+        plain = P.prompt_for(dict(job, role='', setting=''), True, False)
+        self.assertNotIn('crown', plain)
+        self.assertIn('Plain, timeless clothing', plain)
+
+    def test_only_the_newest_approved_version_per_chapter_is_embedded_with_its_status(self):
+        for h, role in (('aaa', 'Prince'), ('bbb', 'King')):
+            folder = P.IMAGES / ('b' * 32) / 'k'
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / (h + '-384.webp')).write_bytes(b'x')
+        P.save_index('b' * 32, {'figures': {'k': [
+            {'hash': 'aaa', 'key': 'k/aaa', 'from_chapter': 1, 'looks': [], 'age': '', 'role': 'Prince', 'approved': True},
+            {'hash': 'bbb', 'key': 'k/bbb', 'from_chapter': 1, 'looks': [], 'age': '', 'role': 'King', 'approved': True}]}})
+        rows = P.embed_data('b' * 32)['k']
+        self.assertEqual([r['role'] for r in rows], ['King'])
+
+
 if __name__ == '__main__':
     unittest.main()
