@@ -31,7 +31,7 @@ TABLE = [
     ('Profile updated: ', 'Steckbrief ergänzt: ', False), ('(nothing known yet)', '(noch nichts bekannt)', False),
     ('Concepts and people', 'Begriffe und Personen', False), ('Event in the recap', 'Ereignis im Rückblick', False),
     ('Show in character network', 'Im Figurennetz zeigen', False), ('No bookmarks yet.', 'Noch keine Lesezeichen.', False),
-    ('This state ends here.', 'Hier endet dieser Stand.', False), ('Jump to location: ', 'Zum Schauplatz springen: ', False),
+    ('This state ends here.', 'Hier endet dieser Stand.', False), (' – jump to location', ' – zum Schauplatz springen', False), (' – show names', ' – Namen zeigen', False),
     ('${pos+1} of ${seq.length}', '${pos+1} von ${seq.length}', False), ('Your recap ends here.', 'Hier endet dein Rückblick.', False),
     ('Nothing new in the file.', 'Nichts Neues in der Datei.', False),
     ('AI interpretation of the description', 'KI-Deutung der Beschreibung', False),

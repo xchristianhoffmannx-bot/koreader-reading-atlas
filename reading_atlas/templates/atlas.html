@@ -61,12 +61,15 @@ hr{border:0;border-top:1px solid var(--line);margin:40px 0 0}
 .map-frame svg{display:block;width:100%;height:auto}
 .map-frame.light{background:var(--bone)}
 .sea{fill:#161b27}.land{fill:#3a4560;stroke:none}
-.pin circle{fill:var(--lead);stroke:var(--night);stroke-width:2}
-.pin.cur circle{fill:var(--bone);stroke:var(--lead);stroke-width:4}
+.pin .dot{fill:var(--lead);stroke:var(--night);stroke-width:2}
+.pin .hit{fill:transparent;stroke:none}
+.pin.cur .dot{fill:var(--bone);stroke:var(--lead);stroke-width:3}
+.pin.sel .dot{stroke:var(--bone);stroke-width:3}
+.pin .pinlabel,.pin .edgearrow{display:none}.pin.cur .pinlabel,.pin.sel .pinlabel,.pin:hover .pinlabel,.pin:focus-visible .pinlabel{display:inline}.pin .edgearrow{display:inline;fill:var(--lead);stroke:var(--night);stroke-width:1.5}
 .pin text{fill:var(--night);font:700 13px var(--serif);text-anchor:middle;dominant-baseline:central}
 .pin .pinlabel{fill:var(--bone);font:600 17px var(--serif);stroke:#161b27;stroke-width:5px}
 .pinlabel{fill:var(--bone);font:600 17px var(--serif);paint-order:stroke;stroke:#161b27;stroke-width:5px;stroke-linejoin:round}
-.area{fill:rgba(224,74,43,.12);stroke:var(--lead);stroke-width:2;stroke-dasharray:6 5}
+.area{fill:rgba(224,74,43,.07);stroke:var(--lead);stroke-opacity:.5;stroke-width:1.5;stroke-dasharray:5 5}
 .pins{list-style:none;padding:0;margin:0}
 .pins li{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line);align-items:start}
 .pins li:last-child{border-bottom:1px solid var(--line)}
@@ -262,7 +265,7 @@ dialog.sheet .body ul{padding-left:18px;margin:0}
 .rvface{display:flex;flex-direction:column;align-items:center;gap:4px}
 .rvface small{color:var(--dust)}
 .pin{cursor:pointer}
-.pin:focus-visible circle{stroke:var(--g3);stroke-width:3}
+.pin:focus-visible .dot{stroke:var(--g3);stroke-width:3}
 .plink{background:none;border:0;color:var(--bone);font:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px;padding:6px 2px;min-height:36px;cursor:pointer;text-align:left}
 .places>li.flash{background:rgba(224,178,79,.14);border-radius:6px}
 .histbox{margin-top:16px;border-top:1px solid var(--line)}
@@ -553,6 +556,7 @@ dialog.sheet .body ul{padding-left:18px;margin:0}
   const d=li.querySelector('details');if(d)d.open=true;
   li.scrollIntoView({block:'center'});li.classList.add('flash');setTimeout(()=>li.classList.remove('flash'),1800);
  }
+ let geoSel='';
  function drawGeo(){
   const G=D.geo,s=$('#geosvg');if(!G)return;
   s.replaceChildren();s.setAttribute('viewBox',`0 0 ${G.w} ${G.h}`);s.setAttribute('aria-label','Map of the story locations');
@@ -560,14 +564,26 @@ dialog.sheet .body ul{padding-left:18px;margin:0}
   const pins=$('#pins');pins.replaceChildren();
   const area=[...G.areas].filter(a=>a.from<=active).pop();
   if(area){el('ellipse',{class:'area',cx:area.cx,cy:area.cy,rx:area.rx,ry:area.ry},s);el('text',{class:'pinlabel',x:area.cx,y:area.cy-area.ry-6,'text-anchor':'middle'},s,area.name+' (approximate)');}
-  const cur=W.state.current_place;let any=false;
+  const cur=W.state.current_place;let any=false,inArea=false;
+  const draw=[];
   G.markers.forEach(m=>{
    const items=m.items.filter(i=>W.places.has(i.id));if(!items.length)return;any=true;
+   if(area&&Math.abs(m.x-area.cx)<=area.rx&&Math.abs(m.y-area.cy)<=area.ry)inArea=true;
+   draw.push([m,items]);
    const isCur=items.some(i=>i.id===cur),num=items.map(i=>i.n).join('·');
-   const g=el('g',{class:'pin'+(isCur?' cur':''),transform:`translate(${m.x},${m.y})`,tabindex:0,role:'button','aria-label':'Jump to location: '+items.map(i=>i.name).join(' / ')},s);el('circle',{r:28,fill:'transparent'},g);
-   g.addEventListener('click',()=>gotoPlace(items[0].id));g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();gotoPlace(items[0].id);}});
-   el('circle',{r:isCur?17:14},g);el('text',{},g,num);el('text',{class:'pinlabel',x:21,y:5,style:'text-anchor:start;dominant-baseline:auto'},g,items[0].name);
    pins.append(h('li',{class:isCur?'cur':''},h('b',{text:num}),h('span',{},items.flatMap((i,k)=>[k?' / ':'',(()=>{const b=h('button',{type:'button',class:'plink',text:i.name});b.addEventListener('click',()=>gotoPlace(i.id));return b;})()]),isCur?h('small',{text:active===MAX?'Your recap ends here.':'This state ends here.'}):null)));
+  });
+  if(area&&inArea)s.querySelector('.pinlabel')?.remove();
+  const keyOf=items=>items.map(i=>i.id).join('|');
+  draw.sort((a,b)=>(keyOf(a[1])===geoSel?1:0)-(keyOf(b[1])===geoSel?1:0)).forEach(([m,items])=>{
+   const isCur=items.some(i=>i.id===cur),num=items.map(i=>i.n).join('·'),key=keyOf(items),isSel=key===geoSel;
+   const g=el('g',{class:'pin'+(isCur?' cur':'')+(isSel?' sel':''),transform:`translate(${m.x},${m.y})`,tabindex:0,role:'button','aria-label':items.map(i=>i.name).join(' / ')+(isSel?' – jump to location':' – show names')},s);
+   el('circle',{class:'hit',r:22},g);
+   const go=()=>{if(isSel||isCur)gotoPlace((items.find(i=>i.id===cur)||items[0]).id);else{geoSel=key;drawGeo();}};
+   g.addEventListener('click',go);g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go();}});
+   if(m.edge!==undefined)el('path',{class:'edgearrow',d:'M15 0L8 -6V6Z',transform:`rotate(${m.edge}) translate(5 0)`},g);
+   el('circle',{class:'dot',r:isCur?13:11},g);el('text',{},g,num);
+   const right=m.x<G.w*.6;el('text',{class:'pinlabel',x:right?19:-19,y:5,style:`text-anchor:${right?'start':'end'};dominant-baseline:auto`},g,items.map(i=>i.name).join(' / '));
   });
   if(area)pins.append(h('li',{},h('b',{text:'~'}),h('span',{},area.name,h('small',{text:'Approximate area of the invented places; not an exact position.'}))));
   $('#geo-note').textContent='Present-day coastlines, not a historical map. The numbers match the locations.';

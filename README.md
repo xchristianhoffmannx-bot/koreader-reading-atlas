@@ -8,7 +8,7 @@ It is the companion to [koreader-reading-recap](https://github.com/xchristianhof
 
 - **Characters and relationships** as a list with search, and a relationship network of the most connected characters. Each character has a growing profile (appearance, traits, origin) and a note where every detail came from ("chapter, about 45 % in").
 - **Timeline** of events in story order, filterable by plot line.
-- **Places** on a present-day map (Natural Earth coastlines, positions from OpenStreetMap) with numbered pins that appear as the story reaches them. Tapping a pin jumps to the location entry.
+- **Places** on a present-day map (Natural Earth coastlines, positions from OpenStreetMap) with small numbered pins that appear as the story reaches them. The map is cropped to the places; one far-away place sits at the edge with an arrow instead of shrinking the rest. Names show for the current place and on a first tap, a second tap jumps to the location entry.
 - **Time slider**: "The world at this point". Every view, search and note respects it.
 - **Discovery journal**: what became known and when, a short animated reveal when your world has grown, bookmarks and your own notes (clearly marked as guesses, never turned into book facts). Backup and restore as a JSON file.
 - **Optional portraits** of main characters, drawn only from appearance details the text states, labelled as AI interpretation. Off by default, because image generation costs money.

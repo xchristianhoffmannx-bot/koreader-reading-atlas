@@ -58,13 +58,23 @@ def merc_y(lat):
     return math.log(math.tan(math.pi / 4 + math.radians(max(min(lat, 85), -85)) / 2))
 
 
+def _span(lons, lats):
+    mid = (min(lats) + max(lats)) / 2
+    return max(max(lats) - min(lats), (max(lons) - min(lons)) * math.cos(math.radians(mid)))
+
+
 def view(points, areas):
-    """Pick a lon/lat window around markers and areas, padded for context. Returns (w, s, e, n)."""
+    """Pick a lon/lat window around markers and areas with modest padding. Returns (w, s, e, n)."""
     lons = [p[1] for p in points] + [b for a in areas for b in (a[2], a[3])]
     lats = [p[0] for p in points] + [b for a in areas for b in (a[0], a[1])]
+    if len(points) >= 5:
+        # a single far-away place would shrink everything else: leave it out of the window (it gets an edge marker)
+        full = _span(lons, lats)
+        best = max(range(len(points)), key=lambda i: full - _span(lons[:i] + lons[i + 1:], lats[:i] + lats[i + 1:]))
+        if _span(lons[:best] + lons[best + 1:], lats[:best] + lats[best + 1:]) <= full * .7:
+            lons, lats = lons[:best] + lons[best + 1:], lats[:best] + lats[best + 1:]
     west, east, south, north = min(lons), max(lons), min(lats), max(lats)
-    # context: at least ~3 degrees wide, otherwise 60 % padding around the content
-    pad_x, pad_y = max((east - west) * .6, 1.5), max((north - south) * .6, 1.0)
+    pad_x, pad_y = max((east - west) * .25, .6), max((north - south) * .25, .5)
     return west - pad_x, south - pad_y, east + pad_x, north + pad_y
 
 
@@ -131,7 +141,11 @@ def build(places, areas, land_path=None, credit=''):
     markers = []  # places on (nearly) the same spot share one pin so numbers do not hide each other
     for p in places:
         x, y = round(px(p['lon']), 1), round(py(p['lat']), 1)
-        same = next((m for m in markers if abs(m['x'] - x) < 8 and abs(m['y'] - y) < 8), None)
+        edge = None
+        if not (14 <= x <= W - 14 and 14 <= y <= h - 14):   # outside the window: pin sits on the border, arrow points to the place
+            edge = round(math.degrees(math.atan2(y - h / 2, x - W / 2)))
+            x, y = round(min(max(x, 26), W - 26), 1), round(min(max(y, 26), h - 26), 1)
+        same = next((m for m in markers if abs(m['x'] - x) < 8 and abs(m['y'] - y) < 8 and m.get('edge') == edge), None)
         item = {'n': p['n'], 'name': p['name'], 'id': p.get('id', ''), 'from': p.get('from', 0)}
         if same:
             same['n'] += '·' + str(p['n'])
@@ -140,7 +154,7 @@ def build(places, areas, land_path=None, credit=''):
             same['items'].append(item)
         else:
             markers.append({'n': str(p['n']), 'name': p['name'], 'x': x, 'y': y, 'current': bool(p.get('current')),
-                            'items': [item]})
+                            'items': [item], **({'edge': edge} if edge is not None else {})})
     out = {'w': W, 'h': round(h), 'land': land, 'markers': markers,
            'areas': [], 'credit': credit}
     for a in areas:
