@@ -54,7 +54,7 @@ Events are ordered as extracted; an event may carry `after: <earlier event id>` 
 
 ## The page
 
-`reading_atlas/templates/atlas.html` is one file with an embedded JSON blob, no external scripts, fonts or images. The browser folds the states up to the chosen slider position into the visible world; every view (network, list, timeline, map, search, journal, recap) uses that same fold. Your personal state (seen/skipped discoveries, bookmarks, notes, animation setting) lives in the browser's local storage, keyed by book id, and can be exported and imported as JSON.
+`reading_atlas/templates/atlas.html` is one file with an embedded JSON blob, no external scripts, fonts or images. A Content Security Policy in the page (script allowed only by its hash, no network access, images only as embedded data) limits what a page could do even if text from a book contained markup. The browser folds the states up to the chosen slider position into the visible world; every view (network, list, timeline, map, search, journal, recap) uses that same fold. Your personal state (seen/skipped discoveries, bookmarks, notes, animation setting) lives in the browser's local storage, keyed by book id, and can be exported and imported as JSON.
 
 ## Maps
 

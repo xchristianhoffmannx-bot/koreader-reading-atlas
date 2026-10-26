@@ -276,13 +276,15 @@ def order_events(events):
             kids.setdefault(e['after'], []).append(e)
     out, seen = [], set()
 
-    def walk(e):
-        if e['id'] in seen:
-            return
-        seen.add(e['id'])
-        out.append(e)
-        for k in kids.get(e['id'], []):
-            walk(k)
+    def walk(first):   # depth first without recursion: very long "after" chains must not hit the recursion limit
+        stack = [first]
+        while stack:
+            e = stack.pop()
+            if e['id'] in seen:
+                continue
+            seen.add(e['id'])
+            out.append(e)
+            stack.extend(reversed(kids.get(e['id'], [])))
     for e in items:
         if not (e.get('after') and e['after'] in events and e['after'] != e['id']):
             walk(e)
@@ -371,7 +373,7 @@ def advance(book_id, book, cutoff, title, client, asker):
     """Create every missing chapter state up to the reading position. Resumable: one file per state."""
     where = epub_chapters.locate(book, cutoff)
     if not where:
-        raise ValueError('Lesestelle liegt nicht in einem Handlungskapitel')
+        raise ValueError('The reading position is not inside a story chapter')
     chapter_obj, para_k, offset = where
     chapter_k = chapter_obj.number
     folder = HERE / 'atlas-history' / book_id / 'states'

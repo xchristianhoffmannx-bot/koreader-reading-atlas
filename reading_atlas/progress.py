@@ -7,6 +7,7 @@ cached in the data home so a build also works while the device is not connected.
 import datetime
 import json
 from pathlib import Path
+import re
 
 from . import config as cfg
 from .util import atomic_json
@@ -32,7 +33,7 @@ def update_from_device(device):
         except (OSError, ValueError):
             continue
         book_id, cutoff = path.stem, data.get('cutoff')
-        if not (isinstance(cutoff, str) and cutoff.startswith('/body/') and isinstance(data.get('title'), str)):
+        if not re.fullmatch(r'[0-9a-f]{32}', book_id) or not (isinstance(cutoff, str) and cutoff.startswith('/body/') and isinstance(data.get('title'), str)):
             continue
         if known.get(book_id, {}).get('cutoff') != cutoff:
             known[book_id] = {'title': data['title'], 'cutoff': cutoff,

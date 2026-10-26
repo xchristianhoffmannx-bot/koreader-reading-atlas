@@ -126,6 +126,8 @@ def cmd_portraits(args):
             print(f'== {name} (attached: {", ".join(attached) or "nothing"})\n{text}\n')
     elif args.action == 'sheet':
         print(portraits.sheet(args.book_id))
+    elif args.action in ('approve', 'reject') and not args.target:
+        raise SystemExit(f'portraits {args.action} needs figure ids (or "all" for approve), see "portraits sheet"')
     elif args.action == 'approve':
         print(portraits.set_approval(args.book_id, args.target.split(','), True), 'approved')
     elif args.action == 'reject':

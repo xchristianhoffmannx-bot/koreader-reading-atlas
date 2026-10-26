@@ -6,7 +6,7 @@ import re
 import shutil
 import unicodedata
 
-from . import books, config as cfg, epub_chapters, living, llm, portraits, progress, states
+from . import books, config as cfg, enrich_profiles, epub_chapters, geo_map, living, llm, portraits, progress, states
 from .util import atomic_json
 
 HERE = cfg.data_home()
@@ -33,6 +33,12 @@ def load_map(book_id):
 
 def configure(settings):
     states.LANG, states.CHUNK = settings['language'], settings['chunk_chars']
+    home = cfg.data_home()   # resolved for every command, so READING_ATLAS_HOME set after the import is honoured
+    for module in (enrich_profiles, geo_map, living, portraits, states, books):
+        module.HERE = home
+    books.CONFIG, books.CACHE = home / 'atlas-books.json', home / 'book-cache'
+    geo_map.GEO = home / 'atlas-geo'
+    portraits.IMAGES = home / 'atlas-images'
     portraits.configure(settings)
 
 

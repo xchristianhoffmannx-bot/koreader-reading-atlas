@@ -9,6 +9,7 @@ import shutil
 
 from . import config as cfg
 from . import epub_chapters, states
+from .util import atomic_json
 
 HERE = cfg.data_home()
 CONFIG = HERE / 'atlas-books.json'
@@ -20,7 +21,7 @@ def load():
 
 
 def save(config):
-    CONFIG.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
+    atomic_json(CONFIG, config)
 
 
 def resolve_epub(book_id, cfg, device=None):

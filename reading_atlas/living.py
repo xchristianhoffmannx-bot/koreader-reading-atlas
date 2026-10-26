@@ -1,6 +1,9 @@
 """Assemble the data blob and the page of the living atlas from chapter states."""
+import base64
+import hashlib
 import json
 from pathlib import Path
+import re
 
 from . import config as cfg
 from . import geo_map, i18n, prompts
@@ -8,6 +11,15 @@ from . import states as S
 
 HERE = cfg.data_home()
 TEMPLATE = Path(__file__).resolve().parent / 'templates' / 'atlas.html'
+
+
+def lookup(locate, query):
+    """One place that cannot be looked up (network, server) is skipped, the rest of the map stays."""
+    try:
+        return locate(query)
+    except Exception as error:
+        print(f'Place lookup skipped for "{query}": {error}')
+        return None
 
 
 def make_geo(states, book_id, area_override='', locate=geo_map.nominatim, lang='en'):
@@ -20,14 +32,14 @@ def make_geo(states, book_id, area_override='', locate=geo_map.nominatim, lang='
                 first.setdefault(fact['id'], index)
     places = []
     for number, (pid, place) in enumerate(world['places'].items(), 1):
-        hit = locate(place['geo']) if place.get('geo') else None
+        hit = lookup(locate, place['geo']) if place.get('geo') else None
         if hit:
             places.append({'n': number, 'id': pid, 'name': place['name'], 'lat': hit['lat'], 'lon': hit['lon'], 'from': first[pid]})
     areas, last = [], None
     for index, state in enumerate(states):
         name = state['state'].get('area') or (area_override if index == 0 else '')
         if name and name != last:
-            hit = locate(name)
+            hit = lookup(locate, name)
             if hit:
                 areas.append({'name': name.split(',')[0], 'bbox': hit['bbox'], 'from': index})
             last = name
@@ -72,8 +84,16 @@ def build_data(book_id, states, load_map, asof, area_override='', sizes=None, la
     return data
 
 
+CSP = ("default-src 'none'; script-src 'sha256-{}'; style-src 'unsafe-inline'; img-src data:; "
+       "base-uri 'none'; form-action 'none'")
+
+
 def render(data):
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
+    # "</" would end the data block, "<!--" would switch the HTML parser into script-escape mode: both stay valid JSON
+    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/').replace('<!--', '<\\u0021--')
     page = TEMPLATE.read_text(encoding='utf-8')
     page = i18n.translate(page, data.get('lang', 'en'))
-    return page.replace('{{DATA}}', payload)
+    script = re.search(r'<script>(.*?)</script>', page, re.S).group(1)   # the page script, before any data is inserted
+    digest = base64.b64encode(hashlib.sha256(script.encode('utf-8')).digest()).decode()
+    meta = '<meta http-equiv="Content-Security-Policy" content="' + CSP.format(digest) + '">'
+    return page.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' + meta, 1).replace('{{DATA}}', payload)

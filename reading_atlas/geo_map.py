@@ -2,6 +2,7 @@
 
 Coordinates never come from the language model: it only names real places/regions, Nominatim locates them.
 """
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -11,10 +12,14 @@ import urllib.request
 
 from . import config as cfg
 from . import prompts
+from .util import atomic_json
 
 HERE = cfg.data_home()
 GEO = HERE / 'atlas-geo'
-LAND_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_land.geojson'
+LAND_URL = ('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/'
+            'ace5fed0eaf3c6c03c951e75b439ba8fffbc218e/geojson/ne_10m_land.geojson')   # pinned commit, not a moving branch
+LAND_SHA256 = '1ac90796408bc6ad6911d69448485d3c4dbf2190370080368a09976e1c9f7416'
+LAND_MAX = 15000000   # bytes; the file has about 10 MB
 NOMINATIM = 'https://nominatim.openstreetmap.org/search'
 def agent():
     contact = cfg.load()['nominatim_contact'].strip()
@@ -29,7 +34,12 @@ def land_file():
     if not path.exists():
         GEO.mkdir(exist_ok=True)
         with urllib.request.urlopen(urllib.request.Request(LAND_URL, headers={'User-Agent': agent()}), timeout=180) as r:
-            path.write_bytes(r.read())
+            data = r.read(LAND_MAX + 1)
+        if len(data) > LAND_MAX or hashlib.sha256(data).hexdigest() != LAND_SHA256:
+            raise RuntimeError('The downloaded coastline file does not match the expected checksum; it was not saved')
+        tmp = path.with_suffix('.tmp')
+        tmp.write_bytes(data)
+        tmp.replace(path)
     return path
 
 
@@ -37,7 +47,12 @@ def nominatim(query, fetch=None):
     """Cached lookup -> {lat, lon, bbox:[s,n,w,e], name} or None. One request per second at most."""
     GEO.mkdir(exist_ok=True)
     cache_file = GEO / 'geocache.json'
-    cache = json.loads(cache_file.read_text(encoding='utf-8')) if cache_file.exists() else {}
+    try:
+        cache = json.loads(cache_file.read_text(encoding='utf-8')) if cache_file.exists() else {}
+    except (OSError, ValueError):
+        cache = {}   # unreadable cache: start again instead of losing the whole map
+    if not isinstance(cache, dict):
+        cache = {}
     if query not in cache:
         url = NOMINATIM + '?' + urllib.parse.urlencode({'q': query, 'format': 'jsonv2', 'limit': 1,
                                                        'accept-language': 'de'})
@@ -50,7 +65,7 @@ def nominatim(query, fetch=None):
         cache[query] = ({'lat': float(rows[0]['lat']), 'lon': float(rows[0]['lon']),
                          'bbox': [float(v) for v in rows[0]['boundingbox']],
                          'name': rows[0].get('display_name', query)} if rows else None)
-        cache_file.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding='utf-8')
+        atomic_json(cache_file, cache)
     return cache[query]
 
 
