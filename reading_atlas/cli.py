@@ -53,8 +53,8 @@ def cmd_add_book(args):
         if not position:
             continue  # no reading position exported by the plugin yet
         book = epub_chapters.load(path)
-        count, chars = books.estimate(book, position['cutoff'])
-        print(f'{position["title"]}: {count} states, about {chars // 1000}k characters sent to the AI ({path.name})')
+        count, requests, chars = books.estimate(book, position['cutoff'])
+        print(f'{position["title"]}: {count} states, about {requests} AI requests, roughly {chars // 1000}k characters sent ({path.name})')
         if not count:
             print('  The reading position is not inside a story chapter; skipped.')
             continue

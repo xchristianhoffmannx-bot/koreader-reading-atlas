@@ -1,6 +1,7 @@
 import shutil, tempfile, unittest
 from pathlib import Path
-from reading_atlas import books
+from unittest import mock
+from reading_atlas import books, states
 from reading_atlas import epub_chapters as E
 import test_epub_chapters as T
 
@@ -31,10 +32,20 @@ class BooksTest(unittest.TestCase):
 
     def test_estimate_counts_states_and_characters(self):
         book = E.load(T.make_epub())
-        count, chars = books.estimate(book, '/body/DocFragment[3]/body/section/p[2]/text().0')
+        count, requests, chars = books.estimate(book, '/body/DocFragment[3]/body/section/p[2]/text().0')
         self.assertEqual(count, 2)
-        self.assertGreater(chars, 0)
-        self.assertEqual(books.estimate(book, '/body/DocFragment[1]/body/section/p[1]/text().0'), (0, 0))
+        self.assertEqual(requests, 4)                          # main + audit request for each of the two states
+        self.assertGreater(chars, 2 * 600)                     # the text is sent twice, plus instructions
+        self.assertEqual(books.estimate(book, '/body/DocFragment[1]/body/section/p[1]/text().0'), (0, 0, 0))
+
+    def test_estimate_counts_one_request_pair_per_chunk(self):
+        book = E.load(T.make_epub())
+        with mock.patch.object(states, 'CHUNK', 700):          # the test chapters have about 3,600 characters each
+            _, small, _ = books.estimate(book, '/body/DocFragment[3]/body/section/p[2]/text().0')
+        with mock.patch.object(states, 'CHUNK', 100000):
+            _, large, _ = books.estimate(book, '/body/DocFragment[3]/body/section/p[2]/text().0')
+        self.assertGreater(small, large)
+        self.assertEqual(large, 4)
 
 if __name__ == '__main__':
     unittest.main()

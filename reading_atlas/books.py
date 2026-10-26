@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 
 from . import config as cfg
-from . import epub_chapters
+from . import epub_chapters, states
 
 HERE = cfg.data_home()
 CONFIG = HERE / 'atlas-books.json'
@@ -49,12 +49,25 @@ def scan_device(device):
     return found
 
 
+REQUEST_OVERHEAD = 3500   # characters of instructions in every request
+WORLD_PER_STATE = 150     # the known-world JSON grows by about this much with every finished state
+
+
 def estimate(book, cutoff):
-    """(number of states to generate, characters sent to Codex) for a book up to the reading position."""
+    """(states, requests, characters sent) to build a book up to the reading position. A rough guide, not a quote.
+
+    Every state sends its text twice (main request and audit request, each per CHUNK characters), plus instructions and
+    the known characters and events. Reading on inside a chapter makes a new partial state: the chapter up to the new
+    position is sent again (the finished chapters before it are not)."""
     where = epub_chapters.locate(book, cutoff)
     if not where:
-        return 0, 0
+        return 0, 0, 0
     chapter, paragraph, _ = where
-    done = [c for c in book.chapters if c.number < chapter.number]
-    chars = sum(sum(map(len, c.paragraphs)) for c in done) + sum(map(len, chapter.paragraphs[:paragraph + 1]))
-    return len(done) + 1, chars
+    jobs = [(c, len(c.paragraphs) - 1) for c in book.chapters if c.number < chapter.number] + [(chapter, paragraph)]
+    requests = chars = 0
+    for index, (c, last) in enumerate(jobs):
+        lines = epub_chapters.text_upto(c, last)
+        n = 2 * len(states.audit_chunks(lines))
+        requests += n
+        chars += 2 * sum(len(t) for _, t in lines) + n * (REQUEST_OVERHEAD + WORLD_PER_STATE * index)
+    return len(jobs), requests, chars

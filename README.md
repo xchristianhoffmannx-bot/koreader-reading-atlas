@@ -37,7 +37,7 @@ Details: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md). What is sent where, what 
 - Python **3.11 or newer**. No other packages are needed (Pillow only for portraits).
 - koreader-reading-recap installed on the reader if you want positions from the device. Without it you can set a position by hand.
 - Your own AI access: the [Codex CLI](https://developers.openai.com/codex/cli/) signed in with your account, **or** an API key for OpenAI, Anthropic or Google Gemini.
-- Internet access and allowance/billing with your provider. A first read of a long book makes many requests, one per roughly 30,000 characters of text. `reading-atlas add-book` shows an estimate before anything is sent.
+- Internet access and allowance/billing with your provider. A first read of a long book makes many requests: two (main pass and audit) per roughly 30,000 characters of text, each with instructions and the known characters. Reading on inside a chapter sends that chapter again up to your new position. `reading-atlas add-book` shows an estimate before anything is sent.
 
 ## Install and first run
 

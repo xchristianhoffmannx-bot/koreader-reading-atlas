@@ -59,6 +59,79 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(len(calls), 2)
 
 
+class NetworkTest(unittest.TestCase):
+    """Client._post against a fake opener: retries, error details, size limit."""
+    KEY = 'sk-secret-key'
+
+    def client(self):
+        return llm.Client({'provider': 'openai', 'model': 'm', 'key': self.KEY})
+
+    def run_post(self, steps, **patches):
+        """steps: HTTPError or bytes per attempt; returns (result or exception, sleeps)."""
+        sleeps, queue = [], list(steps)
+        patches.setdefault('MAX_ANSWER', llm.MAX_ANSWER)
+
+        class Response:
+            def __init__(self, raw): self.raw = raw
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self, n=-1): return self.raw[:n] if n >= 0 else self.raw
+
+        class Opener:
+            def open(self, request, timeout=None):
+                step = queue.pop(0)
+                if isinstance(step, BaseException):
+                    raise step
+                return Response(step)
+        with mock.patch.object(llm.urllib.request, 'build_opener', return_value=Opener()),                 mock.patch.object(llm, 'sleep', sleeps.append), mock.patch.multiple(llm, **patches):
+            try:
+                return self.client()._post('https://x', {}, {}), sleeps
+            except RuntimeError as error:
+                return error, sleeps
+
+    @staticmethod
+    def http(code, body=b'', headers=None):
+        import email.message, io, urllib.error
+        message = email.message.Message()
+        for k, v in (headers or {}).items():
+            message[k] = v
+        return urllib.error.HTTPError('https://x', code, 'err', message, io.BytesIO(body))
+
+    def test_rate_limits_and_server_errors_are_retried_with_backoff(self):
+        result, sleeps = self.run_post([self.http(429), self.http(503), b'{"ok": 1}'])
+        self.assertEqual(result, {'ok': 1})
+        self.assertEqual(sleeps, [2, 8])
+
+    def test_retry_after_header_is_honoured_and_capped(self):
+        _, sleeps = self.run_post([self.http(429, headers={'Retry-After': '5'}), self.http(429, headers={'Retry-After': '9999'}), b'{}'])
+        self.assertEqual(sleeps, [5, 120])
+
+    def test_gives_up_after_four_attempts(self):
+        result, sleeps = self.run_post([self.http(500)] * 4)
+        self.assertIsInstance(result, RuntimeError)
+        self.assertIn('gave up after 4 attempts', str(result))
+        self.assertEqual(sleeps, [2, 8, 30])
+
+    def test_connection_errors_and_garbled_json_are_retried(self):
+        import urllib.error
+        result, sleeps = self.run_post([urllib.error.URLError('down'), b'{"cut', b'{"a": 2}'])
+        self.assertEqual(result, {'a': 2})
+        self.assertEqual(len(sleeps), 2)
+
+    def test_client_errors_are_not_retried_and_show_the_providers_message_without_the_key(self):
+        body = ('{"error": {"message": "Incorrect API key provided: ' + self.KEY + '"}}').encode()
+        result, sleeps = self.run_post([self.http(401, body)])
+        self.assertIsInstance(result, RuntimeError)
+        self.assertIn('HTTP 401: Incorrect API key provided', str(result))
+        self.assertNotIn(self.KEY, str(result))
+        self.assertEqual(sleeps, [])
+
+    def test_an_oversized_answer_is_an_error_not_a_silent_cut(self):
+        result, _ = self.run_post([b'{"a": "' + b'x' * 50 + b'"}'], MAX_ANSWER=20)
+        self.assertIsInstance(result, RuntimeError)
+        self.assertIn('larger than', str(result))
+
+
 class ProgressTest(unittest.TestCase):
     def test_positions_come_from_the_plugin_export_and_are_cached(self):
         tmp = Path(tempfile.mkdtemp())
