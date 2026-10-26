@@ -9,7 +9,7 @@ tests/test_i18n.py checks that every literal is covered and that no German is le
 # (english, german, raw)
 TABLE = [
     ('All', 'Alle', False), ('Short', 'Kurz', False), ('Character', 'Figur', False), ('Map', 'Karte', False),
-    ('Open', 'Offen', False), ('Done', 'Fertig', False), ('Medium', 'Mittel', False), ('Next', 'Weiter', False),
+    ('Done', 'Fertig', False), ('Medium', 'Mittel', False), ('Next', 'Weiter', False),
     ('Concept', 'Begriff', False), ('Characters', 'Figuren', False), ('Idea', 'Gedanke', False),
     ('Timeline', 'Verlauf', False), ('✎ Note', '✎ Notiz', False), ('Appearance', 'Aussehen', False),
     ('Concepts', 'Begriffe', False), ('Event', 'Ereignis', False), ('Ideas', 'Gedanken', False),
@@ -77,7 +77,7 @@ TABLE = [
     ('Load from text', 'Aus Text laden', False), ('Relationship network', 'Beziehungsnetz', False),
     ('Backup text', 'Sicherungstext', False), ('At a glance', 'Auf einen Blick', False),
     ('Main navigation', 'Hauptnavigation', False), ('Enlarged map', 'Karte vergrößert', False),
-    ('What remains open', 'Was offen bleibt', False), ('Hide images', 'Bilder ausblenden', False),
+    ('Hide images', 'Bilder ausblenden', False),
     ('Jump within the atlas', 'Im Atlas springen', False), ('Discovery journal', 'Entdeckungsjournal', False),
     ('Story so far', 'Was bisher geschah', False), ('Experience discoveries', 'Entdeckungen erleben', False),
     ('↺ Story so far', '↺ Was bisher geschah', False), ('Historical overview', 'Historische Übersicht', False),
@@ -88,9 +88,24 @@ TABLE = [
     ('The world at this point', 'Die Welt zu diesem Zeitpunkt', False),
     ('Your story world has grown', 'Deine Romanwelt ist gewachsen', False),
     ('Paste backup text here', 'Sicherungstext hier einfügen', False),
-    ('Questions your reading position does not answer yet.', 'Fragen, die dein Lesestand noch nicht beantwortet.', False),
     ('In story order. Arrangement and distances are schematic.', 'In der Reihenfolge der Handlung. Anordnung und Abstände sind schematisch.', False),
     ('new', 'neu', False),
+    ('All open riddles', 'Alle offenen Rätsel', False),
+    ('Tap a question – below it you find what the text says so far.', 'Tippe eine Frage an – darunter steht, was der Text bisher dazu hergibt.', False),
+    ('Open in the story · ', 'Offen in der Geschichte · ', True),
+    ('What is documented so far', 'Was bisher belegt ist', False),
+    ('Next riddle →', 'Nächstes Rätsel →', False),
+    ('🎲 Show me a character I have not met yet', '🎲 Zeig mir eine Figur, die ich noch nicht kenne', False),
+    ('Spoiler-free: only what you have read up to your reading position is shown here.', 'Spoilerfrei: Hier steht nur, was du bis zu deiner Lesestelle gelesen hast.', False),
+    ('You are viewing an earlier position – later chapters stay hidden.', 'Du siehst eine frühere Stelle – spätere Kapitel bleiben verborgen.', False),
+    ('Who is close to whom?', 'Wer steht wem nah?', False),
+    ('open riddles', 'offene Rätsel', False),
+    ('What is still to come', 'Was noch aussteht', False),
+    ('Where it all happens', 'Wo alles spielt', False),
+    ('The path so far', 'Der Weg bis hier', False),
+    ('Riddle ${qi+1} of ${qs.length}', 'Rätsel ${qi+1} von ${qs.length}', False),
+    ('Riddles', 'Rätsel', False),
+    ('Hide', 'Verbergen', False),
 ]
 
 
