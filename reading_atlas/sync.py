@@ -82,7 +82,7 @@ def build(settings=None, client=None, asker=None, device=None, only=None):
             area_file = cfg.data_home() / 'atlas-maps' / book_id / 'geo.json'
             override = json.loads(area_file.read_text(encoding='utf-8')).get('area', '') if area_file.exists() else ''
             data = living.build_data(book_id, chain, load_map, position['updated'], override,
-                                     {c.number: len(c.paragraphs) for c in book.chapters}, settings['language'])
+                                     {c.number: len(c.paragraphs) for c in book.chapters}, settings['language'], entry['title'])
             page = living.render(data)
             target = out_dir / (slug(entry['title']) + '.html')
             if not target.exists() or target.read_text(encoding='utf-8') != page:

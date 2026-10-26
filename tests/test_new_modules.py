@@ -159,6 +159,18 @@ class SyncTest(unittest.TestCase):
         self.assertEqual(len(shown), 1)
         self.assertEqual(shown[0]['label'], 'Oakfield, October 1013')
 
+    def test_page_title_is_the_configured_title_not_the_models_guess(self):
+        def asker(prompt_text, schema, client, rules):
+            answer = json.loads(self.asker(prompt_text, schema, client, rules)['state'])
+            answer['title'] = 'Wrong Title'
+            return {'state': json.dumps(answer)}
+        settings = dict(cfg.DEFAULTS, language='en', drive_dir=str(self.tmp / 'drive'))
+        sync.build(settings, client=object(), asker=asker)
+        page = (self.home / 'atlas' / 'test-book.html').read_text(encoding='utf-8')
+        data = json.loads(re.search(r'id="atlas-data"[^>]*>(.*?)</script>', page, re.S).group(1))
+        self.assertEqual(data['title'], 'Test Book')
+        self.assertEqual({s['state']['title'] for s in data['states']}, {'Test Book'})
+
     def test_german_pages_use_the_german_interface(self):
         self.build('de')
         page = (self.home / 'atlas' / 'test-book.html').read_text(encoding='utf-8')

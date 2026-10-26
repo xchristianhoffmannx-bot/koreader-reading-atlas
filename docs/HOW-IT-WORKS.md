@@ -35,10 +35,14 @@ A state is a list of facts: `node` (character or concept), `edge` (relationship)
 `states.py` verifies before a fact is accepted:
 
 - **Anchor:** the cited paragraph must exist and be inside what you have read.
-- **Names:** a character's name, short name or alias must occur at the anchor or up to three paragraphs before it. For nameless characters a capitalised key word of the label ("prisoner", "mother") is enough.
+- **Names:** a character's name, short name or alias must occur at the anchor or up to three paragraphs before it, as whole words (a plain genitive or plural ending is fine, "Ed" is not found in "needed"; names of one or two letters must match exactly, case included). For nameless characters a capitalised key word of the label ("prisoner", "mother") is enough.
 - **Relationships and events:** one of the involved characters must be named near the anchor.
 - **Profile sentences:** the figure must be named near the anchor, repeated or reworded sentences are dropped, at most four new ones per figure and state.
 - **Duplicates:** the same character under two ids stays one character; the extra names become aliases.
+
+What is **not** checked: the descriptive text of a fact (`text`, `detail`, `brief`, the summaries and open questions of a state) is the model's own wording. Only the source is verified, not every sentence. The book title is not sent to the model, so it cannot lean on outside knowledge of the plot by title; the page uses the title from `atlas-books.json`.
+
+The model's answer is treated as untrusted: items that are not objects, fields of the wrong type and non-lists are dropped and logged in `unverified`, they never stop a run.
 
 Rejected items are kept in `unverified` inside the state file for inspection. They never reach the page.
 

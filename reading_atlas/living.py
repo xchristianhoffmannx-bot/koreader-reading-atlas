@@ -47,10 +47,12 @@ def apply_order_overrides(book_id, states):
     return out
 
 
-def build_data(book_id, states, load_map, asof, area_override='', sizes=None, lang='en'):
+def build_data(book_id, states, load_map, asof, area_override='', sizes=None, lang='en', title=''):
     states = apply_order_overrides(book_id, states)
+    if title:   # the configured title wins: the model is not told the book title and only guesses one
+        states = [dict(s, state=dict(s['state'], title=title)) for s in states]
     last = states[-1]['state']
-    data = {'title': last.get('title', ''), 'book_id': book_id, 'asof': asof, 'lang': lang,
+    data = {'title': title or last.get('title', ''), 'book_id': book_id, 'asof': asof, 'lang': lang,
             'states': [{'label': s['label'], 'place': s['place'], 'when': s['when'], 'complete': s['complete'],
                         'groups': s['groups'], 'state': s['state'], 'facts': s['facts'],
                         'chapter': s['chapter'], 'size': (sizes or {}).get(s['chapter'], 0)} for s in states]}

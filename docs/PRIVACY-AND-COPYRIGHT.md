@@ -4,7 +4,7 @@
 
 | What | To whom | When |
 |---|---|---|
-| Text of the chapters you have read (in requests of about 30,000 characters), the current known characters and events | The AI provider you chose (OpenAI, Anthropic, Google Gemini) or, with the Codex CLI, OpenAI under your Codex login | every time new text has to be processed |
+| Text of the chapters you have read (in requests of about 30,000 characters), the current known characters and events | The AI provider you chose (OpenAI, Anthropic, Google Gemini) or, with the Codex CLI, OpenAI under your Codex login | every time new text has to be processed; the book title is not sent |
 | Place names found in the book (for example "London, England") and your `nominatim_contact` | OpenStreetMap Nominatim | only for real-world places, results are cached |
 | Nothing | Natural Earth | the land polygons are downloaded once from a public GitHub address |
 | A short description of a character's appearance, a style reference and an earlier image (Codex) | Your image provider | only if you turn portraits on |

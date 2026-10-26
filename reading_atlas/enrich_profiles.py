@@ -18,7 +18,7 @@ def prompt(title, chapter, known, lines):
     world = [{'id': n['id'], 'name': n['name'], 'aliases': n.get('aliases', [])} for n in known['nodes'].values()]
     profile = {i: [f"{p['aspect']}: {p['text'][:70]}" for p in ps] for i, ps in known['profile'].items()}
     return (prompts.build(prompts.ENRICH, states.LANG, PROFILE=prompts.PROFILE_RULES[states.LANG])
-            + prompts.dumps({'book': title, 'chapter': chapter.title, 'known_world': {'nodes': world, 'profile': profile},
+            + prompts.dumps({'chapter': chapter.title, 'known_world': {'nodes': world, 'profile': profile},
                              'text': '\n'.join(f'[{i}] {t}' for i, t in lines)}))
 
 

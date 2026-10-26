@@ -26,7 +26,7 @@ The reading position comes from the koreader-reading-recap plugin (Windows compa
 
 1. The recap plugin on your reader exports the position (KOReader XPointer) you have reached. `reading-atlas build --device <drive>` reads it.
 2. The EPUB is split into story chapters (cover, contents, cast list, map, blurb and other front/back matter are never used: they would reveal the plot). For each chapter, up to your position, an AI request extracts **new** facts with a source paragraph for each.
-3. Python checks every fact against the text (does the cited paragraph really mention the character or place?). Facts that fail are discarded, not shown. A second pass asks for forgotten characters, including nameless ones such as "the prisoner".
+3. Python checks the source of every fact: the cited paragraph must lie inside what you have read and name the character or place involved (as whole words). Facts that fail are discarded, not shown. The descriptive sentences of a fact are the AI's paraphrase; they are not compared with the text. A second pass asks for forgotten characters, including nameless ones such as "the prisoner".
 4. Knowledge only grows: a known character is never dropped; wording changes only through an explicit correction in the text.
 5. One HTML page per book is written. It contains only states up to your reading position, so a later chapter cannot leak even if someone reads the page source.
 
@@ -90,7 +90,7 @@ Turn them on with `"portraits": true`. A character gets a portrait once the text
 
 ## Limitations
 
-- The AI can miss characters or mis-order events. The checks catch invented facts, not every omission; a chronology correction can be put into `atlas-maps/<book id>/order.json`.
+- The AI can miss characters or mis-order events. The checks catch invented names and wrong sources, not every wrong or missing statement (descriptions are not verified against the text, and a book the model knows well can colour them even though the title is not sent); a chronology correction can be put into `atlas-maps/<book id>/order.json`.
 - Chapters can be long, so states are chapter-sized.
 - Place lookups need a real-world place name; invented places are shown as an approximate region at most.
 - Portraits are an AI reading of a short description. They will differ from your own mental picture.
