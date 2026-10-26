@@ -71,9 +71,12 @@ def build(settings=None, client=None, asker=None, device=None, only=None):
                 print(f'{entry["title"]}: EPUB not available; connect the device or set "epub" in atlas-books.json')
                 continue
             book = epub_chapters.load(epub)
+            if not book.front_matter_known:
+                print(f'{entry["title"]}: warning: no table of contents or landmarks in the EPUB, cast lists or blurbs may be treated as story text; check the first chapters')
             client = client or llm.LazyClient(settings)
             states.advance(book_id, book, position['cutoff'], entry['title'], client, asker or llm.ask)
-            chain = states.load_clean(book_id)
+            where = epub_chapters.locate(book, position['cutoff'])
+            chain = states.load_clean(book_id, (where[0].number, where[1]))
             if not chain:
                 continue
             area_file = cfg.data_home() / 'atlas-maps' / book_id / 'geo.json'

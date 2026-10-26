@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 import posixpath
 import re
+from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -50,11 +51,47 @@ class Chapter:
 
 
 class Book:
-    def __init__(self, chapters, spine_count):
+    def __init__(self, chapters, spine_count, front_matter_known=True):
         self.chapters, self.spine_count = chapters, spine_count
+        self.front_matter_known = front_matter_known   # False: no table of contents or landmarks, cast lists and blurbs may be included
 
     def by_spine(self, spine):
         return next((c for c in self.chapters if c.spine == spine), None)
+
+
+def _zip_path(folder, href):
+    """Name of a file inside the EPUB: href relative to its folder, URL-decoded ("My%20Book.xhtml"), without fragment."""
+    return posixpath.normpath(posixpath.join(folder, unquote(href.split('#')[0])))
+
+
+def _type(element):
+    return next((v for k, v in element.attrib.items() if _local(k) == 'type'), '')
+
+
+def _read_titles(z, base, nav_names):
+    """Chapter titles and the first story file, from NCX, EPUB3 nav document (toc) and landmarks."""
+    titles, body_start = {}, ''
+    for name in z.namelist():
+        if name.endswith('.ncx'):
+            for point in ET.fromstring(z.read(name)).iter():
+                if _local(point.tag) == 'navPoint':
+                    label = next((_text(t) for t in point.iter() if _local(t.tag) == 'text'), '')
+                    src = next((c.get('src') for c in point if _local(c.tag) == 'content'), '')
+                    titles.setdefault(_zip_path(posixpath.dirname(name), src), label)
+    for name in nav_names:
+        try:
+            root = ET.fromstring(z.read(name))
+        except (KeyError, ET.ParseError):
+            continue
+        folder = posixpath.dirname(name)
+        for nav in (n for n in root.iter() if _local(n.tag) == 'nav'):
+            kind = _type(nav)
+            for a in (a for a in nav.iter() if _local(a.tag) == 'a' and a.get('href')):
+                if 'toc' in kind or not kind:
+                    titles.setdefault(_zip_path(folder, a.get('href')), _text(a))
+                elif 'landmarks' in kind and 'bodymatter' in _type(a) and not body_start:
+                    body_start = _zip_path(folder, a.get('href'))
+    return titles, body_start
 
 
 def load(path):
@@ -62,31 +99,30 @@ def load(path):
     opf_path = re.search(r'full-path="([^"]+)"', z.read('META-INF/container.xml').decode('utf-8', 'replace')).group(1)
     base = posixpath.dirname(opf_path)
     opf = ET.fromstring(z.read(opf_path))
-    items = {i.get('id'): i.get('href') for i in opf.iter() if _local(i.tag) == 'item'}
+    items = {i.get('id'): _zip_path(base, i.get('href')) for i in opf.iter() if _local(i.tag) == 'item' and i.get('href')}
+    nav_names = [_zip_path(base, i.get('href')) for i in opf.iter()
+                 if _local(i.tag) == 'item' and i.get('href') and 'nav' in (i.get('properties') or '').split()]
     spine = [i.get('idref') for i in opf.iter() if _local(i.tag) == 'itemref']
-    titles = {}
-    for name in z.namelist():
-        if name.endswith('.ncx'):
-            for point in ET.fromstring(z.read(name)).iter():
-                if _local(point.tag) == 'navPoint':
-                    label = next((_text(t) for t in point.iter() if _local(t.tag) == 'text'), '')
-                    src = next((c.get('src') for c in point if _local(c.tag) == 'content'), '')
-                    titles.setdefault(src.split('#')[0], label)
+    titles, body_start = _read_titles(z, base, nav_names)
+    if not body_start:   # EPUB2: <guide><reference type="text|bodymatter"> marks the start of the story
+        body_start = next((_zip_path(base, r.get('href')) for r in opf.iter() if _local(r.tag) == 'reference'
+                           and r.get('href') and (r.get('type') or '').lower() in ('text', 'bodymatter')), '')
+    start = next((n for n, idref in enumerate(spine) if body_start and items.get(idref) == body_start), 0)
     chapters = []
     for number, idref in enumerate(spine, 1):
         href = items.get(idref)
-        if not href:
+        if not href or number - 1 < start:
             continue
         title = titles.get(href, '')
         if SKIP_TITLE.match(title.strip()):
             continue
-        tree = ET.fromstring(z.read(posixpath.join(base, href)))
+        tree = ET.fromstring(z.read(href))
         paragraphs = [_text(p) for p in tree.iter() if _local(p.tag) == 'p']
         paragraphs = [p for p in paragraphs if p]
         if sum(map(len, paragraphs)) < MIN_STORY_CHARS:
             continue
         chapters.append(Chapter(len(chapters) + 1, number, title.strip(), paragraphs, tree))
-    return Book(chapters, len(spine))
+    return Book(chapters, len(spine), bool(titles) or bool(body_start))
 
 
 def locate(book, cutoff):

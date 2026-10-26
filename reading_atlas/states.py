@@ -96,8 +96,8 @@ def dedupe_profile(chain):
     return out
 
 
-def load_clean(book_id):
-    return dedupe_profile(load_states(book_id))
+def load_clean(book_id, upto=None):
+    return dedupe_profile(load_states(book_id, upto))
 
 
 def apply_profile(known, items, chapter, limit, log):
@@ -266,9 +266,12 @@ def fold(states):
     return known
 
 
-def load_states(book_id):
+def load_states(book_id, upto=None):
+    """All states of a book; with upto=(chapter, paragraph) only those that end at or before the reading position."""
     folder = HERE / 'atlas-history' / book_id / 'states'
     states = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(folder.glob('*.json'))] if folder.exists() else []
+    if upto:   # the position may have moved back: states of later chapters or paragraphs must not reach the page
+        states = [s for s in states if (s['chapter'], s['paragraph']) <= tuple(upto)]
     complete = {s['chapter'] for s in states if s['complete']}
     # a provisional state is superseded once its chapter is complete; keep only the newest one per chapter
     latest = {}

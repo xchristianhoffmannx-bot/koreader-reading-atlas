@@ -144,6 +144,21 @@ class SyncTest(unittest.TestCase):
         self.assertEqual((self.tmp / 'drive' / 'Reading Atlas' / 'test-book.html').read_text(encoding='utf-8'), page)
         self.assertEqual(self.build(), (0, 0, 0))                                      # nothing changed, nothing rebuilt
 
+    def test_position_moving_back_removes_later_chapters_from_the_page(self):
+        def states_in_page():
+            page = (self.home / 'atlas' / 'test-book.html').read_text(encoding='utf-8')
+            blob = re.search(r'id="atlas-data"[^>]*>(.*?)</script>', page, re.S).group(1)
+            return json.loads(blob)['states']
+        self.build()
+        self.assertEqual(len(states_in_page()), 2)                                      # read into chapter 2
+        progress = json.loads((self.home / 'progress.json').read_text(encoding='utf-8'))
+        progress['c' * 32]['cutoff'] = '/body/DocFragment[2]/body/section/p[3]/text().0'  # back to chapter 1
+        (self.home / 'progress.json').write_text(json.dumps(progress), encoding='utf-8')
+        self.build()
+        shown = states_in_page()
+        self.assertEqual(len(shown), 1)
+        self.assertEqual(shown[0]['label'], 'Oakfield, October 1013')
+
     def test_german_pages_use_the_german_interface(self):
         self.build('de')
         page = (self.home / 'atlas' / 'test-book.html').read_text(encoding='utf-8')
