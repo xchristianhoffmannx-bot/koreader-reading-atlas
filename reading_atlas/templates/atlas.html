@@ -416,7 +416,7 @@ dialog.sheet .body ul{padding-left:18px;margin:0}
     if(f.t==='node')k.nodes.set(f.id,{...f});else if(f.t==='edge')k.edges.set(f.id,{...f});
     else if(f.t==='event')k.events.set(f.id,{...f,_i:k.events.size});else if(f.t==='place')k.places.set(f.id,{...f});
     else if(f.t==='prof'){const a=k.profile.get(f.target)||[];a.push({...f});k.profile.set(f.target,a);}
-    else if(f.t==='rev'){const t=[k.nodes,k.edges,k.events,k.places].map(m=>m.get(f.target)).find(Boolean);if(t)t[f.field]=f.text;}
+    else if(f.t==='rev'){const t=[k.nodes,k.edges,k.events,k.places].map(m=>m.get(f.target)).find(Boolean);if(t){if(f.field==='name'&&t.name&&t.name!==f.text)t.aliases=[...new Set([...(t.aliases||[]),t.name])].sort();t[f.field]=f.text;}}
    });
    k.state=s.state;
   }

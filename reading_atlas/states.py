@@ -177,15 +177,23 @@ def apply_delta(known, delta, chapter, limit, log):
             facts.append(dict(fact))
     for r in delta.get('revisions') or []:
         target = next((known[t][r.get('target')] for t in ('nodes', 'edges', 'events', 'places') if r.get('target') in known[t]), None)
-        if not target or r.get('field') not in ('text', 'kind', 'detail', 'brief') or not r.get('text'):
+        if not target or r.get('field') not in ('text', 'kind', 'detail', 'brief', 'name') or not r.get('text'):
             continue
-        names = terms_of(known, [r['target']]) or [target.get('name') or target.get('title') or '']
-        if not supported(paras, r.get('anchor'), names, 3):
+        if r['field'] == 'name':   # a nameless figure gets its name: the new name itself must stand at the anchor
+            if r['target'] not in known['nodes'] or len(r['text']) > 60 or not supported(paras, r.get('anchor'), [r['text']], 3):
+                reject('revision', r, 'anchor does not support the new name')
+                continue
+            names = []
+        else:
+            names = terms_of(known, [r['target']]) or [target.get('name') or target.get('title') or '']
+        if names and not supported(paras, r.get('anchor'), names, 3):
             reject('revision', r, 'anchor does not support the revision')
             continue
         fact = {'t': 'rev', 'target': r['target'], 'field': r['field'], 'text': r['text'], 'reason': r.get('reason', ''),
                 'at': [chapter.number, r['anchor']]}
         target.setdefault('history', []).append({'field': r['field'], 'text': target.get(r['field'], '')})
+        if r['field'] == 'name':
+            target['aliases'] = sorted(set(target.get('aliases', [])) | {target['name']})
         target[r['field']] = r['text']
         facts.append(fact)
     for key in ('title', 'subtitle', 'kind', 'where', 'lead', 'stand', 'area', 'current_place'):
@@ -250,6 +258,8 @@ def fold(states):
             elif f['t'] == 'rev':
                 tgt = next((known[t][f['target']] for t in ('nodes', 'edges', 'events', 'places') if f['target'] in known[t]), None)
                 if tgt:
+                    if f['field'] == 'name' and tgt.get('name') and tgt['name'] != f['text']:
+                        tgt['aliases'] = sorted(set(tgt.get('aliases', [])) | {tgt['name']})
                     tgt[f['field']] = f['text']
         known['state'] = s['state']
     known['events'] = order_events(known['events'])
